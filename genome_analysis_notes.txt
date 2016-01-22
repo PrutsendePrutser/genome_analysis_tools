@@ -1,0 +1,43 @@
+Blast+:
+- Front-end met layout, selections etc. Eventueel met bootstrap
+- Zoeken naar manier om automatisch een update naar de front-end te versturen, i.p.v. file polling via AJAX
+- Weg om CGI-BIN heen zoeken, liefst zonder webframework
+- Indien webframework gebruikt wordt, zo simpel mogelijk houden, goed documenteren voor de volgende
+    - Bij gebruik van webframework zo min mogelijk gebruiken, bijvoorbeeld een simpele request toevoegen, en periodiek
+    updates sturen naar de site voor de voortgang. Eventueel Flask, want lightweight
+- Meest recente BLAST+ versie gebruiken
+
+Requirements:
+- virtualenv
+- Flask?
+- BioPython?
+- requirements.txt file voor automatische installatie van benodigde modules
+
+Algemene notes:
+- Logging functie, zowel voor errors als voor updates etc.
+- Gebruik maken van beschikbare data, in plaats van alles te kopieren naar een local file
+- Temporary files daadwerkelijk in een tmp map stoppen, die na iedere run geleegd wordt.
+- Overleggen over script dat iedere x weken/maanden een cleanup doet van resultfiles
+- Minder class variables, meer lokaal, makkelijker te volgen
+- Waarschijnlijk is een commandline util mogelijk die werkt voor alle tools
+
+Utils:
+- Command line util
+- Logging util
+- Polling scripts etc.
+- Nettere manier vinden om missing files/sequences te vermelden
+- UID/identifier utils indien mogelijk, dan hoeft niet het hele filesystem e.d. doorzocht te worden
+
+Opzet Blast+ code:
+- Request komt binnen
+- Verzamel parameters
+- Launch main program
+- Functie schrijven die de benodigde result files aanmaakt, indien dit niet automatisch kan via externe tools
+- Nettere manier om parameters te extracten
+- In plaats van functie naar functie te springen gebruik maken van functies met return value
+- Nettere manier om de juiste functiechain te starten, o.b.v. de gekozen parameters
+- Indien een invalid combinatie is gekozen, gebruik maken van een duidelijke melding
+- Liefst client-side form validation, om te voorkomen dat er überhaupt foutieve parametersets mee worden gestuurd
+- Indien alle parameters kloppen, sequenties verzamelen/poolen.
+- Uitzoeken of BLAST+ een lijst van filelocs accepteert, zodat deze niet eerst gepooled hoeven te worden in een groot bestand
+- Uitzoeken of het maken van een matrix gekoppeld kan worden met het runnen van BLAST+. Lijkt erop dat er nu tweemaal een database wordt gemaakt
