@@ -41,3 +41,8 @@ Opzet Blast+ code:
 - Indien alle parameters kloppen, sequenties verzamelen/poolen.
 - Uitzoeken of BLAST+ een lijst van filelocs accepteert, zodat deze niet eerst gepooled hoeven te worden in een groot bestand
 - Uitzoeken of het maken van een matrix gekoppeld kan worden met het runnen van BLAST+. Lijkt erop dat er nu tweemaal een database wordt gemaakt
+
+Progress updates:
+- Flask call, met duidelijke naam functie
+- Lees progressfile in
+- Return JSON naar front-end
