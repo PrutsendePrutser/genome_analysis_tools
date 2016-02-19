@@ -1,0 +1,14 @@
+# genome_analysis_tools/config.py
+
+# Basic config setings -> NON SENSITIVE INFORMATION. SENSITIVE INFORMATION NEEDS TO BE PLACES IN
+# instance/config.py WHICH WON'T BE UPLOADED TO GIT
+
+# CHANGE DEBUG TO FALSE FOR PRODUCTION
+DEBUG = True
+
+# JS/CSS DEBUG, SET TO FALSE FOR PRODUCTION
+ASSETS_DEBUG = True
+
+MAIL_FROM_EMAIL = "bmtc.aarts@gmail.com"
+
+SERVER_NAME = "localhost:5000"
