@@ -1,0 +1,931 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" lang="en-GB" xml:lang="en-GB">
+	<head>
+		<!--CONTENT INFO-->
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=9"/>
+		<link rel="stylesheet" type="text/css" href="mgv_lite.css" />
+		<link rel ="stylesheet" type = "text/css" href="jquery-ui-1.8.23.custom.css" />
+		<title>MGcV: Microbial Genomic context Viewer</title>
+
+		<!--JQUERY IMPORTS-->
+		<script src="http://code.jquery.com/jquery-latest.js" type="text/javascript"></script>
+		<script src="http://malsup.github.com/jquery.form.js" type="text/javascript"></script>
+		<script src = "jquery-ui-1.8.23.custom.min.js" type = "text/javascript"></script>
+
+		<!--FIRST SCRIPT-->
+		<script type="text/javascript">
+		// pre-submit callback
+		var blastplussucceeded = false;
+		var contextsucceeded = false;
+		var blastplushtml = "hello";
+		var contexthtml = "hello";
+
+
+		//CHECK BLAST PLUS STATUS
+		function getBlastplusStatus(now) {
+		    var now = now
+		    console.log("Timestamp: "+now);
+		    $.getJSON("/cgi-bin/data-analysis/blastplus_subprocess/get_progress.py",{identifier: now},
+		    function(data) {
+			console.log(data);
+			$("#blastplusresultdiv").html('<input type = "button" id = "resetblastplushtml" name = "resetblastplushtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value="Reset" />');
+			if (data.hasOwnProperty("update")){
+			console.log(data.update)
+			$("#blastplusresultdiv").prepend(data.update);
+			}
+			else if (data.hasOwnProperty("error")){
+				console.log(data.error);
+				$("#blastplusresultdiv").prepend("Error: "+data.error+'<br><br>You can reset the application by clicking on the reset button');
+			}
+			else if (data.hasOwnProperty("result")){
+				console.log(data.result);
+				var blastplusresult = data.result.split("\n");
+				$("#blastplusprogress").progressbar("destroy");
+				$("#blastplusresultdiv").html('<input type = "button" id = "resetblastplushtml" name = "resetblastplushtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value="Reset" />');
+				$('#blastplusresultdiv').prepend(blastplusresult[0]+'<br><br><a href="'+blastplusresult[1]+'" target=_"blank">'+blastplusresult[2]+'</a><br><a href="'+blastplusresult[3]+'" target=_"blank">'+blastplusresult[4]+'</a><br><a href="'+blastplusresult[5]+'" target=_"blank">'+blastplusresult[6]+'</a><br><a href="'+blastplusresult[7]+'" target=_"blank">'+blastplusresult[8]+'</a><br><a href="'+blastplusresult[9]+'" target=_"blank">'+blastplusresult[10]+'</a><br><a href="'+blastplusresult[11]+'" target=_"blank">'+blastplusresult[12]+'</a><br>');
+
+			}
+			blastpluspercentage = parseInt(data.percentage);
+			if (blastpluspercentage > 100)
+			{
+				blastpluspercentage = 100;
+			}
+			$("#blastplusprogress").progressbar("option", "value", blastpluspercentage);
+			$("#resetblastplushtml").click(function () {
+			$("#blastplusresultdiv").empty().hide();
+			$("#blastplusresultdiv").html('<input type = "button" id = "resetblastplushtml" name = "resetblastplushtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value="Reset" />');
+			$("#blastplusdiv").show();
+		    });
+			if (!data.hasOwnProperty("error") && !data.hasOwnProperty("result")){
+			window.setTimeout(function() {getBlastplusStatus(now);}, 1000);
+			}
+
+		    });
+		}
+
+		//CHECK CONTEXT STATUS
+		function getContextStatus(now) {
+
+			var now = now;
+			console.log("hallo");
+			$.getJSON("/cgi-bin/data-analysis/contexttool_subprocess/get_progress.py", {identifier: now},
+			function(data) {
+
+			console.log(data);
+
+
+
+			$("#contexttoolresultdiv").html('<input type = "button" id = "resetcontexthtml" name = "resetcontexthtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value = "Reset" />');
+			if (data.hasOwnProperty("error"))
+			{
+
+							$("#contexttoolresultdiv").prepend('Error: '+data.error+'<br><br>You can reset the application by clicking on the reset button');
+							$("#contextprogress").progressbar("destroy");
+						}
+						else if (data.hasOwnProperty("update"))
+						{
+						$("#contexttoolresultdiv").prepend(data.update);
+						}
+						else if (data.hasOwnProperty("result"))
+						{
+
+							var contextresult = data.result.split("\n");
+							$('#contexttoolresultdiv').prepend(contextresult[0]+'<br><br><a href="'+contextresult[1]+'" target="_blank">'+contextresult[2]+'</a>');
+							$("#contextcurrenttime").val(now);
+							$("#contexttooldiv").height("auto");
+							$("#contextprogress").progressbar("destroy");
+							contextsucceeded = true;
+
+						}
+						contextpercentage = parseInt(data.percentage);
+						console.log(contextpercentage);
+						if (contextpercentage > 100){
+							contextpercentage = 100;
+						}
+						$("#contextprogress").progressbar("option", "value", contextpercentage);
+						$("#resetcontexthtml").click(function () {
+						$("#contexttoolresultdiv").empty().hide();
+						$("#contexttoolresultdiv").html('<input type = "button" id = "resetcontexthtml" name = "resetcontexthtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value = "Reset" />');
+						$("#contexttooldiv").show();
+						});
+						if (!data.hasOwnProperty("error") && !data.hasOwnProperty("result"))
+						{
+						window.setTimeout(function() {getContextStatus(now);}, 1000);
+						}
+						});
+			//end getJSON
+
+			}
+
+		//CHECK SMS STATUS
+			function getSMSStatus(now){
+				var now = now;
+				$.getJSON("/cgi-bin/data-analysis/smstool/get_progress.py",{identifier: now},
+				function(data){
+					console.log(data);
+					$("#sms_resultdiv").html('<input type = "button" id = "reset_sms" name = "reset_sms" class = "button" style = "width:90px; font-size:11px; position:absolute; bottom:0; right:0;" value = "Reset" />');
+					if (data.hasOwnProperty("error")){
+						$("#sms_resultdiv").prepend('Error: '+data.error+'<br><br>You can reset the application by clicking on the reset button');
+					}
+					else if (data.hasOwnProperty("update")){
+						$("#sms_resultdiv").prepend(data.update);
+					}
+					else if (data.hasOwnProperty("result")){
+						var sms_data = data.result.split('\t');
+						console.log(sms_data);
+						console.log(sms_data[0]);
+						$("#sms_resultdiv").prepend('The SMS tool has finished running. You can download the result file with the link below:<br><br><a href="'+sms_data[0]+'" target="_blank">'+sms_data[1]+'</a>');
+					}
+					$("#reset_sms").click(function(){
+						$("#sms_resultdiv").empty().hide();
+						$("#sms_resultdiv").html('<input type = "button" id = "reset_sms" name = "reset_sms" class = "button" style = "width:90px; font-size:11px; position:absolute; bottom:0; right:0;" value = "Reset" />');
+						$("#smsdiv").show();
+					});
+					if (!data.hasOwnProperty("error") && !data.hasOwnProperty("result")){
+						window.setTimeout(function () {getSMSStatus(now);}, 1000);
+					}
+				});
+			}
+
+		//CHECK FOR FILE IF REQUEST
+		function showRequest(formData, jqForm, options) {
+		    var fileValue = $('input[name=uploaded_file]').fieldValue();
+		    if (!fileValue[0]) {
+			alert('Select a file first');
+			return false;
+		    }
+		    $( "#loader" ).empty().append( '<img src="img/ajax-loader.gif" style="margin-top:6px;" alt="Loader icon" />' );
+		    return true;
+		}
+
+		// post-submit callback
+		function showResponse(responseText, statusText, xhr, $form)  {
+		    json_string = JSON.stringify( responseText );
+		    file_type = $form[0].file_type.value;
+		    if(responseText.hasOwnProperty('error')){
+		       alert("Error: "+responseText.error);
+		       }
+		    else{
+		       enable_imported_data(file_type);
+		       if (file_type == "genomic_positions"){
+			  $('input[name=genomic_positions_json]').val(json_string);
+			  }
+		       if (file_type == "gene_scores"){
+			  $('input[name=gene_scores_json]').val(json_string);
+			  }
+		       if (file_type == "custom_colors"){
+			  $('input[name=custom_colors_json]').val(json_string);
+			  }
+		       }
+		    $( "#loader" ).empty();
+		}
+
+		//REQUEST SPECIES FOR TAXONOMY
+		function speciesRequest(formData, jqForm, speciesoptions)
+			{
+				if ($("#superkingdom").val() == "")
+				{
+					alert("Please select at least a superkingdom!");
+					return false;
+				}
+				alert($("#superkingdom").val());
+				var speciesheight = $("#speciesdiv").height()
+				$("#speciesresult").height(speciesheight);
+				$("#speciesdiv").height(speciesheight);
+				console.log("Value: "+$("#superkingdom").val());
+				return true;
+			}
+
+			function speciesResponse(responseText, xhr)
+			{
+
+				if (responseText.hasOwnProperty('error'))
+				{
+					$("#speciesresult").prepend("Error: "+responseText.error+'<br><br>You can reset the application by clicking on the reset button');
+					$("#speciesdiv").hide();
+					$("#speciesresult").show();
+					$("#resetspecies").click(function(){
+					$("#speciesresult").empty().hide();
+					$("#speciesresult").html('<input type = "button" value = "Reset" id = "resetspecies" name = "resetspecies" style="position:absolute;right:0;bottom:0;" />');
+					$("#speciesdiv").show();
+				});
+
+
+				}
+				else if (responseText.hasOwnProperty('filepath'))
+				{
+					$("#speciesdiv").hide();
+					$("#speciesresult").prepend('<b>Click on the link below to download your species selection file<br><br><a href="'+responseText.filepath+'" target="_blank">Species selection file</a>');
+					$("#speciesresult").show();
+					$("#resetspecies").click(function(){
+					$("#speciesresult").empty().hide();
+					$("#speciesresult").html('<input type = "button" value = "Reset" id = "resetspecies" name = "resetspecies" style="position:absolute;right:0;bottom:0;" />');
+					$("#speciesdiv").show();
+				});
+				}
+			}
+
+		//REQUEST BLAST PLUS DATA FROM INPUT
+		function blastplusRequest(formData, jqForm, blastplusoptions)
+			{
+				var blastplusdivheight = $("#blastplusdiv").height();
+				$("#blastplusresultdiv").height(blastplusdivheight);
+				$("#blastplusdiv").hide();
+				$("#blastplusresultdiv").show();
+
+				blastpluspercentage = 0
+				$("#blastplusprogress").progressbar({
+					value: blastpluspercentage
+				});
+				console.log($("#query_option").val());
+				$( "#blastplusloader" ).empty().append( '<img src="img/ajax-loader.gif" style = "margin-top:6px;" alt="loader icon" />' );
+
+
+				return true;
+			}
+
+			function blastplusResponse(responseText, xhr)
+			{
+
+				now = $("#blastpluscurrenttime").val();
+				console.log("Response: "+responseText);
+				if (responseText.hasOwnProperty('error'))
+				{
+					$("#blastplusresultdiv").prepend("Error: "+responseText.error+'<br><br>Please reset the application by clicking the reset button');
+					$("#blastplusprogress").progressbar('destroy');
+				}
+				else{
+					console.log(now);
+					getBlastplusStatus(now);
+
+
+				}
+				$('#blastplusresultdiv').prepend(responseText.firstline);
+
+				$("#blastpluscurrenttime").val(Date.now());
+
+				blastplussucceeded = true;
+
+
+
+				$("#resetblastplushtml").click(function () {
+				$("#blastplusresultdiv").empty().hide();
+				$("#blastplusresultdiv").html('<input type = "button" id = "resetblastplushtml" name = "resetblastplushtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value="Reset" />');
+				$("#blastplusdiv").show();});
+			$( "#blastplusloader" ).empty();
+			}
+
+		//REQUEST DATA FROM CONTEXT INPUT
+		function contextRequest(formData, jqForm, contextoptions)
+			{
+				console.log($("#contextcurrenttime").val());
+				contextpercentage = 0;
+				$("#contextprogress").progressbar({
+					value: contextpercentage
+				});
+				contextsucceeded = false;
+				var contextdivheight = $("#contexttooldiv").height();
+				$("#contexttoolresultdiv").height(contextdivheight);
+				$("#contexttooldiv").hide();
+				$("#contexttoolresultdiv").show();
+
+
+				return true;
+			}
+
+			function contextResponse(contextText, xhr)
+			{
+
+				$("#contexttoolresultdiv").html('<input type = "button" id = "resetcontexthtml" name = "resetcontexthtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value = "Reset" />');
+				$("#contexttoolresultdiv").prepend(contextText.startmsg)
+				now = $("#contextcurrenttime").val();
+
+				if (contextText.hasOwnProperty('error'))
+				{
+					$("#contexttoolresultdiv").prepend("Error: "+contextText.error+'<br><br>You can reset the application by clicking the the reset button');
+				}
+				else{
+					getContextStatus(now);
+
+				}
+				var now = (new Date()).getTime() / 1000|0;
+				$("#contextcurrenttime").val(now);
+				$("#resetcontexthtml").click(function () {
+				$("#contextprogress").progressbar("destroy");
+				$("#contexttoolresultdiv").empty().hide();
+				$("#contexttoolresultdiv").html('<input type = "button" id = "resetcontexthtml" name = "resetcontexthtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value = "Reset" />');
+				$("#contexttooldiv").show();});
+			$( "#contextloader" ).empty();
+			}
+
+		//REQUEST SMS DATA FROM INPUT
+		function smsRequest(formData, jqForm, smsoptions)
+			{
+				var smsdivheight = $("#smsdiv").height();
+				$("#smsdiv").height(smsdivheight);
+				$("#sms_resultdiv").height(smsdivheight);
+
+				if (parseFloat($("#rel_threshold").val()) > 1.0)
+				{
+					alert("Relative threshold needs to be > 1");
+					$("#rel_threshold").val(0);
+					return false;
+				}
+				console.log("Request");
+				$("#smsdiv").hide();
+				$("#sms_resultdiv").show();
+				return true;
+
+			}
+
+			function smsResponse(smsResponseText, xhr)
+			{
+				$("#sms_resultdiv").html('<input type = "button" id = "reset_sms" name = "reset_sms" value = "Reset!" style = "bottom:0;right:0;width:90px;font-size:11px;position:absolute;" />');
+				now = $("#smstime").val();
+				console.log(now);
+
+				if (smsResponseText.hasOwnProperty("error"))
+				{
+					alert(smsResponseText.error);
+
+				}
+				else
+				{
+				console.log("Result: "+smsResponseText.startmsg);
+				$("#sms_resultdiv").prepend(smsResponseText.startmsg);
+				console.log(now);
+				getSMSStatus(now);
+				}
+				var now = (new Date()).getTime() / 1000|0;
+				$("#smstime").val(now);
+				console.log("Test");
+				$("#reset_sms").click(function(){
+				$("#sms_resultdiv").empty().hide();
+				$("#sms_resultdiv").html('<input type = "button" id = "reset_sms" name = "reset_sms" value = "Reset!" style = "bottom:0;right:0;width:90px;font-size:11px;position:absolute;" />');
+				$("#smsdiv").show();});
+			}
+
+		//UPDATE FURTHER TAXONOMY OF SPECIES
+		function updatePhylum()
+			{
+				var supkd = $("#superkingdom").val();
+				console.log(supkd);
+				var phylselect = '<option value=""></option>';
+				console.log(json_obj[supkd])
+				for (var phylum in json_obj[supkd])
+				{
+					phylselect += '<option value="'+phylum+'">'+phylum+'</option>';
+				}
+				$("#phylum").html(phylselect);
+				$("#class").html('<option value=""></option>');
+				$("#order").html('<option value=""></option>');
+				$("#family").html('<option value=""></option>');
+				$("#genus").html('<option value=""></option>');
+				$("#species").html('<option value=""></option>');
+			}
+
+			function updateClass()
+			{
+				supkd = $("#superkingdom").val();
+				phyl = $("#phylum").val();
+				var classselect = '<option value=""></option>';
+				for (var class_ in json_obj[supkd][phyl])
+				{
+					classselect += '<option value="'+class_+'">'+class_+'</option>';
+				}
+				$("#class").html(classselect);
+				$("#order").html('<option value=""></option>');
+				$("#family").html('<option value=""></option>');
+				$("#genus").html('<option value=""></option>');
+				$("#species").html('<option value=""></option>');
+			}
+
+			function updateOrder()
+			{
+				supkd = $("#superkingdom").val();
+				phyl = $("#phylum").val();
+				class_ = $("#class").val()
+				var orderselect = '<option value=""></option>';
+				for (var order in json_obj[supkd][phyl][class_])
+				{
+					orderselect += '<option value="'+order+'">'+order+'</option>';
+				}
+				$("#order").html(orderselect);
+				$("#family").html('<option value=""></option>');
+				$("#genus").html('<option value=""></option>');
+				$("#species").html('<option value=""></option>');
+			}
+
+
+			function updateFamily()
+			{
+				supkd = $("#superkingdom").val();
+				phyl = $("#phylum").val();
+				class_ = $("#class").val();
+				order = $("#order").val();
+				console.log(json_obj[supkd][phyl][class_][order]);
+				var familyselect = '<option value=""></option>';
+				for (var family in json_obj[supkd][phyl][class_][order])
+				{
+					console.log(family);
+					familyselect += '<option value="'+family+'">'+family+'</option>';
+				}
+				$("#family").html(familyselect)
+				$("#genus").html('<option value=""></option>');
+				$("#species").html('<option value=""></option>');
+			}
+
+			function updateGenus()
+			{
+				supkd = $("#superkingdom").val();
+				phyl = $("#phylum").val();
+				class_ = $("#class").val();
+				order = $("#order").val();
+				family = $("#family").val();
+
+				var genusselect = '<option value=""></option>';
+				for (var genus in json_obj[supkd][phyl][class_][order][family])
+				{
+					genusselect += '<option value="'+genus+'">'+genus+'</option>';
+				}
+				$("#genus").html(genusselect);
+				$("#species").html('<option value=""></option>');
+			}
+
+			function updateSpecies()
+			{
+				supkd = $("#superkingdom").val();
+				phyl = $("#phylum").val();
+				class_ = $("#class").val();
+				order = $("#order").val();
+				family = $("#family").val();
+				genus = $("#genus").val();
+
+				speciesselect = '<option value=""></option>';
+				for (var species in json_obj[supkd][phyl][class_][order][family][genus])
+				{
+					speciesselect += '<option value="'+species+'">'+species+'</option>';
+				}
+				$("#species").html(speciesselect);
+			}
+		//END OF TAXNOMY
+
+		function toggle_refseq_figure() {
+			    $('#refseq_gi_codes').toggle(400);
+			    return false;
+			};
+
+		//  ############################
+		// #WHEN DOM IS DONE LOADING#
+		//############################
+		$(document).ready(function ()
+			{
+
+				// Bind data upload form to ajax function
+				var options = {
+				   dataType:  'json',
+				   beforeSubmit:  showRequest,  // pre-submit callback
+				   success:       showResponse  // post-submit callback
+				};
+
+				var speciesoptions = {
+					dataType: 'json',
+					beforeSubmit: speciesRequest,
+					success: speciesResponse,
+					cache: false
+				};
+
+				var blastplusoptions = {
+					dataType: 'json',
+					beforeSubmit: blastplusRequest,
+					success: blastplusResponse,
+					cache: false
+
+				};
+
+				var contextoptions = {
+					dataType: 'json',
+					beforeSubmit: contextRequest,
+					success: contextResponse,
+					cache: false
+
+				};
+				var smsoptions = {
+					dataType: 'json',
+					beforeSubmit: smsRequest,
+					success: smsResponse,
+					cache: false
+				};
+
+
+
+
+				function log( message ) {
+				    $( "<div>" ).text( message ).prependTo( "#log" );
+				    $( "#log" ).scrollTop( 0 );
+				}
+
+
+				$.ajaxSetup({cache: false});
+				$('#import_form').ajaxForm(options);
+				$('#speciesform').ajaxForm(speciesoptions);
+				$('#blastplusform').ajaxForm(blastplusoptions);
+				$('#contextform').ajaxForm(contextoptions);
+				$('#smsform').ajaxForm(smsoptions);
+				$('#specie_selection').load('organism_select.txt');
+				$('#db_sequences').load('organism_select.txt');
+				$('#sms_sequence_select_server').load('organism_select.txt');
+				var now = Date.now();
+				$("#blastpluscurrenttime").val(now);
+				$("#contextcurrenttime").val(now);
+				$("#smstime").val(now);
+				$.getJSON("/cgi-bin/data-analysis/make_speciesdict.py", function(data)
+				{
+					window.json_obj = data;
+					var superkingdom_opt = '';
+					for (var species in json_obj){
+						if (!species == ""){
+						superkingdom_opt += '<option value="'+species+'">'+species+'</option>';}
+					}
+					$("#superkingdom").html(superkingdom_opt);
+					$("#superkingdom").val("Bacteria");
+					updatePhylum();
+					$("#json_div").show()
+				});
+				$('#tabs').tabs();
+			});
+		</script>
+
+	</head>
+
+	<body>
+
+		<div id="dhtmltooltip">
+		</div>
+		<!--TOOLTIP.JS SCRIPT-->
+		<script src="tooltip.js" type="text/javascript">
+		</script>
+
+		<div style="clear:both"><br/>
+		</div>
+
+		<!--MAIN CANVAS-->
+		<div id = "canvas_and_main" style = "width:1500px;">
+
+			<!-- DATA ANALYSIS BOX-->
+			<div id = "maindiv" class = "gene_box" style="width:250px;">
+				<div class = "box_header" style = "width:245px;"><h3 class = "box_header_title" >> Data analysis</h3>
+				</div>
+				<div id = "tabs" style = "font-size:11px;" style = "width:245px;height:auto;">
+					<ul>
+						<li><a href="#tabs-0" style= "font-size:11px; width:99px;">Species</a></li>
+						<li><a href="#tabs-1" style= "font-size:11px; width:99px;">Blast+</a></li>
+						<li><a href="#tabs-2" style= "font-size:11px; width:99px;">Context</a></li>
+						<li><a href="#tabs-3" style= "font-size:11px; width:99px;">SMS</a></li>
+					</ul>
+
+					<!--TAB 0-->
+					<div id="tabs-0" name="tabs-0" style="width:245px;">
+						<div id ="speciesdiv" name = "speciesdiv" style="padding:4px;">
+							<b>Species selection:</b><br><br>
+							With this tool you can select one or more organisms in the same taxonomic division.The file that is returned can be downloaded to use it with the BLAST+ tool and contexttool<br>
+							<form method="post" enctype="multipart/form-data" id = "speciesform" action="/cgi-bin/data-analysis/speciesselector/create_species_selection_file.py">
+							<table border=0 width="98%">
+								<col width="65%" />
+								<col width="35%" />
+								<tr><td><select id = "superkingdom" name = "superkingdom" onchange = "updatePhylum()" style = "width:130px;">
+
+								</select></td><td>Superkingdom</td></tr>
+								<tr><td><select id = "phylum" name = "phylum" style =  "width:130px;" onchange = "updateClass()">
+								</select></td><td>Phylum</td></tr>
+								<tr><td><select id = "class" name = "class" style = "width:130px;" onchange = "updateOrder()"></select></td><td>Class</td></tr>
+								<tr><td><select id = "order" name = "order" style = "width:130px;" onchange = "updateFamily()"></select></td><td>Order</td></tr>
+								<tr><td><select id = "family" name = "family" style = "width:130px;" onchange = "updateGenus()"></select></td><td>Family</td></tr>
+								<tr><td><select id = "genus" name = "genus" style = "width:130px;" onchange = "updateSpecies()"></select></td><td>Genus</td></tr>
+								<tr><td><select id = "species" name = "species" style = "width:130px"></select></td><td>Species</td></tr>
+							</table>
+							<input type = "hidden" value = "" id = "speciestime" name = "speciestime" />
+							<input type = "submit" value = "Create species file" />
+							</form>
+						</div>
+						<div id = "speciesresult" name = "speciesresult" style="padding:4px; display:none;position:relative;">
+							<input type = "button" value = "Reset" id = "resetspecies" name = "resetspecies" style="position:absolute;right:0;bottom:0;" />
+						</div>
+						<script type="text/javascript">
+							$("#resetspecies").click(function(){
+								$("#speciesresult").empty().hide();
+								$("#speciesresult").html('<input type = "button" value = "Reset" id = "resetspecies" name = "resetspecies" style="position:absolute;right:0;bottom:0;" />');
+								$("#speciesdiv").show();
+							});
+						</script>
+					</div>
+
+					<!--TAB 1 -->
+					<div id="tabs-1" name="tabs-1" style = "width:245px;">
+						<div id="blastplusprogress" name="blastplusprogress" >
+						</div>
+						<div id = "blastplusdiv" name = "blastplusdiv" style = "width:245px;padding:4px;">
+							<form id = "blastplusform" action = "/cgi-bin/data-analysis/blastplus_subprocess/main_wrapper.py" method = "post" enctype="multipart/form-data">
+							<input type = "hidden" id = "blastpluscurrenttime" name = "blastpluscurrenttime" value = "" />
+							<input type = "hidden" id = "query_option" name = "query_option" value = "" />
+							<input type = "hidden" id = "refseq_option" name = "refseq_option" value = "" />
+
+							<div id = "query_select" style = "width:240px; background-color:white; display:block;">
+								<b>Query input:</b>
+								<ul type = "none">
+									<li>
+										<input type = "radio" name = "query_seq" value = "query_user_file" />Upload Fasta File
+									</li>
+									<li>
+									<div id = "query_user_file" class = "query" style = "width:230px; display:none; background-color:white;">
+										<input class = "button" type = "file" id = "query_upload_file" name = "query_upload_file" size = "24" style = "width:220px;"/>
+									</div>
+									</li>
+									<li>
+										<input type = "radio" name = "query_seq" value = "query_user_sequence" />Enter your own sequence
+									</li>
+									<li>
+									<div id = "query_user_sequence" class = "query" style = "width:220px; display:none; background-color:white;">
+										<textarea id = "query_user_seq" name = "query_user_seq" cols = "22" rows = "4" style="width:96%;"></textarea>
+									</div>
+									</li>
+								</ul>
+							</div>
+							<div id = "sequence_select" style = "width:240px; background-color:white; display:block;">
+								<br><b>Reference sequence input</b>
+								<ul type = "none">
+									<li>
+										<input type = "radio" id = "refseq_genome" name = "refseq_genome" value = "refseq_user_file" />Upload your own sequence
+									</li>
+									<li>
+									<div id = "refseq_user_file" class = "desc" style = "display:none; width:230px; background-color:white;">
+										<input class = "button" type = "file" id="refseq_genome_file" name = "refseq_genome_file" size = "24" style = "width:220px;" />
+									</div>
+									</li>
+									<li>
+										<input type ="radio" id = "refseq_genome" name = "refseq_genome" value = "db_sequences" />Select species from server
+									</li>
+									<li>
+									<div id = "db_sequences" class = "desc" style="display:none; width:220px; overflow-x:auto; background-color:white;">
+
+									</div>
+									</li>
+									<li>
+										<input type = "radio" id = "refseq_genome" name = "refseq_genome" value = "refseq_user_seq" />Enter your fasta sequence here
+									</li>
+									<li>
+									<div id = "refseq_user_seq" class = "desc" style = "display:none; width:220px; background-color:white;">
+										<textarea id = "user_sequence" name = "user_sequence" rows = "4" cols = "22" style="width:96%;"></textarea>
+									</div>
+									</li>
+									<li>
+										<input type = "radio" id = "refseq_genome" name = "refseq_genome" value = "uid_upload" />Upload a file with UID-codes, or an output file from the species filter
+									</li>
+									<li>
+									<div id = "uid_upload" class = "desc" name = "uid_upload" style = "width:230px; background-color:white; display:none;">
+										<input class = "button" type = "file" id = "uid_codes" name = "uid_codes" size = "24" style = "width:220px;"/>
+									</div>
+									</li>
+
+								</ul>
+							</div>
+							<div id = "blast_algorithm_div" style = "width:240px; background-color:white; display:block;">
+
+								<br><b>Choose blast algorithm</b><br>
+									<select name = "blast_algorithm" style = "font-size:10px;width:220px;">
+										<option value = "blastp">Blastp</option>
+										<option value = "blastn">Blastn</option>
+										<option value = "blastx">Blastx</option>
+										<option value = "tblastn">tBlastn</option>
+										<option value = "tblastx">tBlastx</option>
+									</select>
+							</div>
+							<div id = "blast_output_div" style = "display:block; width:240px; background-color:white;">
+								<b>Select output format</b>
+								<select name = "output_format" style = "font-size:10px; width:220px;">
+									<option value = "11" size = "14">Subject(row) x Query(column) Matrix</option>
+									<option value = "12" size = "14">Query(row) x Subject(column) Matrix</option>
+								</select>
+							</div><br><b>Evalue</b>
+							<input type = "text" id = "blastplusevalue" name = "blastplusevalue" size = "5" value = "1e-3" />
+							<br>
+							<br>
+							<input type = "submit" class = "button" style = "width:125px; font-size:11px;" value = "Perform BLAST" />
+
+							</form>
+						</div>
+						<div id = "blastplusresultdiv" name = "blastplusresultdiv" style="display:none;padding:4px;position:relative;">
+							<input type = "button" id = "resetblastplushtml" name = "resetblastplushtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value="Reset" />
+							<div id="blastplusloader" style="margin:0px;padding:0px;float:right;">
+							</div>
+						</div>
+
+						<script type = "text/javascript">
+						$("#resetblastplushtml").click(function () {
+						$("#blastplusresultdiv").empty().hide();
+						$("#blastplusresultdiv").html('<input type = "button" id = "resetblastplushtml" name = "resetblastplushtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value="Reset" />');
+						$("#blastplusdiv").show();
+						});
+						</script>
+					</div>
+
+					<!-- TAB 2 -->
+					<div id = "tabs-2" name="tabs-2" style = "width:245px;">
+						<div id = "contextprogress" name = "contextprogress">
+						</div>
+						<div id = "contexttooldiv" name = "contexttooldiv" style = "width:240px;padding:4px;">
+							<form id = "contextform" name = "contextform" action = "/cgi-bin/data-analysis/contexttool_subprocess/context_wrapper.py" enctype = "multipart/form-data" method = "post" >
+							<input type = "hidden" id = "contextcurrenttime" name = "contextcurrenttime" value = ""/>
+							<input type = "hidden" id = "inputselect" name = "inputselect" value = "" />
+							<div id = "context_input" name = "context_input">
+								<b>Input</b><br>
+								<ul type = "none">
+									<li><input type = "radio" id = "specie_input" name = "specie_input" class = "context" value = "multiple_species">Enter one or more NC-codes, with one start and one stop per NC. NC, start and stop are separated by either tabs or commas. Individual entries are separated by enters<br></li>
+									<div id = "multiple_species" name = "multiple_species" class = "specie_in" style = "display:none;">
+										<textarea id = "multiple_species_input" name = "multiple_species_input" cols = "20" rows = "5" style="width:96%;"></textarea>
+									</div>
+									<!--<li><input type = "radio" id = "specie_input" name = "specie_input" class = "context" value = "single_species" />Enter a single NC-code with start and stop position, separated by a ",".<br></li>
+										<div id = "single_species" name = "single_species" class = "specie_in" style = "display:none;">
+											<textarea name = "single_species_input" id = "single_species_input" cols = "20" rows = "5" style="width:96%;"></textarea>
+										</div>-->
+									<li><input type = "radio" id = "specie_input" name = "specie_input" class = "context" value = "GI_input">Input GI's<br></li>
+										<div id = "GI_input" name = "GI_input" class = "specie_in" style = "display:none;">
+											<textarea name = "gi_list" id = "gi_list" cols = "20" rows = "5" style="width:96%;"></textarea><br>
+											<a href ="javascript:load_mgv_data();">Use GI's loaded into MGV</a>
+										</div>
+									<li><input type = "radio" id = "specie_input" name = "specie_input" class = "context" value = "uid_list" />Enter a list of UID codes, separated by enters<br></li>
+										<div id = "uid_list" name = "uid_list" class = "specie_in" style = "display:none;">
+											<textarea id = "uid_selection" name = "uid_selection" cols = "20" rows = "5" style = "width:96%;" ></textarea>
+										</div>
+								</ul>
+							</div>
+							<hr color = white>
+							<div id = "context_output" name = "context_output">
+								<b>Output</b>
+								<table border = 0 width="98%">
+									<col width="45%" />
+									<col width="45%" />
+									<tr>
+										<td><input type = "checkbox" name = "out_options" id = "out_options" class = "context" value = "ptt" />PTT</td><td><input type = "checkbox" name = "out_options" id = "out_options" class = "context" value = "seq" />Sequence</td></tr>
+										<tr><td><input type = "checkbox" name = "out_options" id = "out_options" class = "context" value = "go" />GO</td><td><input type = "checkbox" name = "out_options" id = "out_options" class = "context" value = "pfam" />PFAM</td></tr>
+										<tr><td><input type = "checkbox" name = "out_options" id = "out_options" class = "context" value = "gbk" />GBK</td>
+										<td><input type = "checkbox" name = "out_options" id = "out_options" class = "context" value = "taxonomy" />Taxonomy</td></tr>
+										<tr><td><input type = "checkbox" name = "out_options" id = "out_options" class = "context" value = "unip" />UniProt ID</td><td><input type = "checkbox" name = "out_options" id = "out_options" class = "context" value = "uidnc" />UID + NC</td></tr>
+								</table>
+							</div>
+							<hr color = white>
+							<table border = 0 width = "98%">
+								<col width="60%" />
+								<col width="39%" />
+								<tr><td><b>Max. # of downstream genes in module</b></td><td><input type = "text" id = "downstream" name = "downstream" size = "6" value = "0"/></td></tr>
+								<tr><td><b>Max. # of upstream genes in module</b></td><td><input type = "text" id = "upstream" name = "upstream" size = "6" value = "0"/></td></tr>
+								<tr><td><b>Max. distance between genes</b></td><td><input type = "text" id = "max_distance" name = "max_distance" size = "6" value = "5000"/></td></tr>
+								<tr><td><b>Exclusive mode</b></td><td><input type="checkbox" id = "exclusive_mode" name = "exclusive_mode" class="checkbox" value="exclusive" /></td></tr>
+							</table>
+							<br><br>
+							<input type = "submit" class = "button" style = "width:125px; font-size:11px;" value = "Get context" />
+							</form>
+						</div>
+						<div id="contexttoolresultdiv" name = "contexttoolresultdiv" style="display:none;padding:4px;position:relative;">
+							<div id="contextloader" style="margin:0px;padding:0px;float:right;">
+							</div>
+							<input type = "button" id = "resetcontexthtml" name = "resetcontexthtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value = "Reset" />
+						</div>
+
+						<script type = "text/javascript">
+						$("#resetcontexthtml").click(function () {
+							$("#contexttoolresultdiv").empty().hide();
+							$("#contexttoolresultdiv").html('<input type = "button" id = "resetcontexthtml" name = "resetcontexthtml" class = "button" style = "width:90px; font-size:11px;position:absolute;bottom:0;right:0;" value = "Reset" />');
+							$("#contexttooldiv").show();
+						});
+						</script>
+					</div>
+
+					<!-- TAB 3 -->
+					<div id = "tabs-3" name="tabs-3">
+						<div id = "smsprogress" name = "smsprogress">
+						</div>
+						<div id = "smsdiv" name = "smsdiv" style = "padding:4px;">
+							<form id = "smsform" name = "smsform" action = "/cgi-bin/data-analysis/smstool/sms_wrapper.py" enctype = "multipart/form-data" method = "post" >
+								<input type = "hidden" id = "smstime" name = "smstime" value = "" />
+								<input type = "hidden" id = "sms_seq_input" name = "sms_seq_input" value = "" />
+								<input type = "hidden" id = "sms_motif_input" name = "sms_motif_input" value = "" />
+								<b>Sequence input</b><br>
+								<ul type = "none">
+									<li><input type = "radio" id = "sms_sequence_select" name = "sms_sequence_select" value = "sms_sequence_upload" />Upload fasta file containing sequences</li>
+										<div class = "sms_sequence" id = "sms_sequence_upload" style = "display:none;">
+											<input type = "file" name = "sms_sequence_file" id = "sms_sequence_file" style = "width:220px;" size = "24" />
+										</div>
+									<li><input type = "radio" id = "sms_sequence_select" name = "sms_sequence_select" value = "sms_sequence_select_server">Select species on server</li>
+										<div class = "sms_sequence" id = "sms_sequence_select_server" name = "sms_sequence_select_server" style="display:none; width:220px; overflow-x:auto; background-color:white;">
+										</div>
+									<li><input type = "radio" id = "sms_sequence_select" name = "sms_sequence_select" value = "uid_list_input">Enter a list of UID-codes, separated by enters</li>
+										<div class = "sms_sequence" id = "uid_list_input" name = "uid_list_input" style = "display:none; width:220px;background-color:white;">
+											<textarea cols = "20" rows = "5" name = "uid_list" id = "uid_list" style = "width:96%"></textarea>
+										</div>
+								</ul>
+								<hr color = white>
+								<b>Motif input</b><br>
+								<ul type = "none">
+									<li><input type = "radio" id = "sms_motif_select" name = "sms_motif_select" value = "sms_motif_upload" />Upload one or more motifs in a file</li>
+										<div class = "sms_motif" id = "sms_motif_upload" name = "sms_motif_upload" style = "display:none;">
+											<input type = "file" name = "sms_motif_file" id = "sms_motif_file" style = "width:220px;" size = "24" />
+										</div>
+									<li><input type = "radio" id = "sms_motif_select" name = "sms_motif_select" value = "sms_motif_text" />Enter one or more motifs in the textarea below, separated with Enters (\n)</li>
+										<div class = "sms_motif" id = "sms_motif_text" name = "sms_motif_text" style = "display:none;">
+											<textarea cols = "20" rows = "5" name = "sms_text_motif" id = "sms_text_motif" style = "width:96%"></textarea>
+										</div>
+								</ul><br>
+								<b>Settings</b><br>
+								<table border = "0" width = "96%">
+								<col width = "70%" />
+								<col width = "30%" />
+								<tr><td>
+								Sequence type</td><td><select id = "sms_seq_type" name = "sms_seq_type" style = "width:95%">
+										<option value = "nuc">DNA</option>
+										<option value = "aa">Amino acid</option>
+								</select></td></tr>
+								<tr><td>Scoring method based on matrix: </td><td><select id = "maxtrix_scoring" name = "matrix_scoring" style = "width:95%">
+									<option value = "size">Size</option>
+									<option value = "max">Max score</option>
+								</select></td></tr>
+								<tr><td>Matrix relative threshold (must be &lt; 1 )</td><td><input type = "text" id = "rel_threshold" name = "rel_threshold" size = "5" value="0.5"/></td></tr>
+								<tr><td>Maximum number of hits</td><td><input type = "text" id = "max_hits" name = "max_hits" size = "5" value="2000" /></td></tr>
+								<tr><td>Maximum number of hits per scoregroup</td><td><input type = "text" id = "max_hits_scoregroup" name = "max_hits_scoregroup" size = "5" value = "400" /></td></tr>
+								</table>
+								<br>
+								<b>Output</b><br>
+								<table border = "0" width = "99%" style = "font-size:10px;">
+									<col width = "50%" />
+									<col width = "50%" />
+								<tr><td valign = "top"><input type = "radio" name = "sms_output" id = "sms_output" class = "sms_output" value = "txt" />Text and Excel</td></tr>
+								<tr><td valign = "top"><input type = "radio" name = "sms_output" id = "sms_output" class = "sms_output" value = "gff" /><strike>GFF3-file</strike></td><td colspan = "2" valign = "top"><input type = "radio" name = "sms_output" id = "sms_output" class = "sms_output" value = "landscape" /><strike>Score landscape chart (only available with custom file)</strike></td></tr>
+								</table>
+								<br><br>
+								<input type = "submit" class = "button" style = "width:125px; font-size:11px;" value = "Submit data" />
+							</form>
+						</div>
+						<div id = "sms_resultdiv" name = "sms_resultdiv" style = "display:none; padding:4px;position:relative;"><input type = "button" id = "reset_sms" name = "reset_sms" value = "Reset!" style = "bottom:0;right:0;width:90px;font-size:11px;position:absolute;" />
+						</div>
+						<script type="text/javascript">
+						$("#reset_sms").click(function(){
+						$("#sms_resultdiv").empty().hide();
+						$("#sms_resultdiv").html('<input type = "button" id = "reset_sms" name = "reset_sms" value = "Reset!" style = "bottom:0;right:0;width:90px;font-size:11px;position:absolute;" />');
+						$("#smsdiv").show();
+
+						});
+						</script>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script type = "text/javascript">
+			$(document).ready(function(){
+			$("input[name$='refseq_genome']").click(function() {
+			var test = $(this).val();
+			$("#refseq_option").val(test);
+			$("div.desc").hide();
+			$("#"+test).show();
+			});
+			});
+			$(document).ready(function(){
+			$("input[name$='query_seq']").click(function() {
+			var test = $(this).val();
+			$("#query_option").val(test);
+			$("div.query").hide();
+			$("#"+test).show();
+			});
+			});
+			$(document).ready(function(){
+			$("input[name$='specie_input']").click(function() {
+			var test = $(this).val();
+			console.log(test);
+			$("#inputselect").val(test);
+			$("div.specie_in").hide();
+			$("#"+test).show();
+			});
+			});
+			$(document).ready(function(){
+			$("input[name$='sms_sequence_select']").click(function() {
+			var test = $(this).val();
+			$("#sms_seq_input").val(test);
+			$("div.sms_sequence").hide();
+			$("#"+test).show();
+			});
+			});
+			$(document).ready(function(){
+			$("input[name$='sms_motif_select']").click(function() {
+			var test = $(this).val();
+			$("#sms_motif_input").val(test);
+			$("div.sms_motif").hide();
+			$("#"+test).show();
+			});
+			});
+		</script>
+
+	</body>
+</html>
