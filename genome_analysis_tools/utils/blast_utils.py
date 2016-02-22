@@ -1,7 +1,6 @@
-
-
-
-
+"""Utils for BLAST, to easily get the commandline string, retrieve file paths
+etcetera
+"""
 
 
 def create_makeblastdb_input_string(filepath_list):
@@ -16,13 +15,6 @@ def create_makeblastdb_input_string(filepath_list):
     makeblastdb_input_list = ['"{}"'.format(filepath) for filepath in filepath_list]
     makeblastdb_input_string = ' '.join(makeblastdb_input_list)
     return_string = '{}'.format(makeblastdb_input_string)
-
-
-
-
-
-
-
 
     return return_string
 
