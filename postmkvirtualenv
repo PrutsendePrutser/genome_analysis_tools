@@ -1,0 +1,171 @@
+#!/bin/sh
+
+# Prerequisites:
+- Python installed
+- Git installed
+- biocentre utils package downloaded and installed in /some/dir/
+
+# Requirements:
+# - Download python 2.7.11 with requirements for this virtualenv. Maybe it is sufficient to download/install it once
+# and then point to the location of the binary
+
+# Python 2.7.11 dependencies
+sudo apt-get install -y \
+autotools-dev      \
+blt-dev            \
+bzip2              \
+dpkg-dev           \
+g++-multilib       \
+gcc-multilib       \
+libbluetooth-dev   \
+libbz2-dev         \
+libexpat1-dev      \
+libffi-dev         \
+libffi6            \
+libffi6-dbg        \
+libgdbm-dev        \
+libgpm2            \
+libncursesw5-dev   \
+libreadline-dev    \
+libsqlite3-dev     \
+libssl-dev         \
+libtinfo-dev       \
+mime-support       \
+net-tools          \
+netbase            \
+python-crypto      \
+python-mox3        \
+python-pil         \
+python-ply         \
+quilt              \
+tk-dev             \
+zlib1g-dev
+
+# Download and install Python 2.7.11 in a directory separate from regular Python
+wget https://www.python.org/ftp/python/2.7.11/Python-2.7.11.tgz
+tar xfz Python-2.7.11.tgz
+cd Python-2.7.11/
+./configure --prefix /usr/local/lib/python2.7.11 --enable-ipv6
+make
+sudo make install
+
+# Test is the install worked correctly
+PYTHON_VERSION=`/usr/local/lib/python2.7.11/bin/python -V`
+
+if [$PYTHON_VERSION = "Python 2.7.11"]; then
+    echo "Python was installed correctly"
+else
+    echo "Python install failed for some reason"
+fi
+
+
+# - make hooks dir in .git directory
+if [$project_exists]; then
+    echo "Please enter the link to the .git file of the repo:"
+    read GIT_URL
+    git clone $GIT_URL
+    cd .git
+else
+    echo "Please enter the name you want to use for the new repo:"
+    read REPO_NAME
+    git init $REPO_NAME
+    cd .git
+fi
+
+hooks_dir="./hooks"
+if [-d $hooks_dir]; then
+    # do nothing
+else
+    mkdir hooks/
+fi
+
+# - make pre-commit hook in .git/hooks directory
+#   - Point to sh/bash location
+#   - run git-pylint-commit-hook
+cd hooks/
+rm pre-commit.sample
+cp /some/dir/pre-commit .
+sed "replaceregexforpathnames"
+
+# - Add .pylintrc file from this repo into the root project directory
+cd ../..
+touch .pylintrc
+python set_pylintrc_settings.py
+
+# - Run the basic-requirements file with pip install -r basic_requirements.txt
+pip install -r basic_requirements.txt
+
+# - Check for a project_requirements.txt file, to see if the project already has its own required modules
+if project_requirements.txt exsists and not empty
+# - Run the project_requirements.txt file if there is any
+    pip install -r project_requirements.txt
+
+# VCS related things:
+
+# - If the project already exists (e.g. imported from git) place the project correctly in the root directory
+if new
+    # - If this is a new project, create it with git init <projectname>. We can use the virtualenv name here
+    git init <projectname>
+
+    # - If this a new project, add the python .gitignore file
+    download python .gitignore
+
+# - If it's an existing prject, check for the .gitignore file. If it's not there, or empty, replace with this version
+else
+    if .gitignore does not exist or empty
+        download python .gitignore
+
+
+# - Prompt user to enter e-mail and password for git settings, so we can see who commits what
+user_email = Prompt user to enter e-mail for git
+git config user.email user_email
+
+# Prompt user real name
+user_name = Prompt user to enter real name, so we can see which person committed
+git config user.name user_name
+
+# Notes:
+
+# - Maybe we should force use of an IDE, that shows some info about style issues/errors, and/or support
+# of VCS in the IDE. It's a lot harder to mess something up from within an IDE, instead of the command line.
+# On the other hand it gives the student a better understanding of how git actually works
+# - Try to force a certain git message format. Like maximum 80 character for the header, but at least 20
+# For a proper one line description, then an empty line, then the actual notes. This way we have descriptive messages
+# and a proper readable header when we go through the commit titles in the logs
+# - Maybe try to incorporate unittests, which we also run automatically in the pre-commit hook. If tests fail
+# this means that something might be broken after some changes. In most of these cases, the code needs to be
+# fixed, not the tests.
+# - If we're able to add this to settings/permissions, don't allow students to just merge branches
+# - Add issues tasks, to GitHub/GitLab, and group related ones into milestones. This way, we only have working features
+# and things that don't work yet, instead of a bunch of things that sort of work, but not really.
+# - Modules/programs beside the basic lists are allowed, but students need to be able to properly explain why x is better than y
+# or why x is better than doing it yourself. Just saying: I googled and found this is not enough. Thinking about why x is better
+# than y will also make someone think about other application, or about the actual use of x or y in their own application. In
+# the case where x is an external module, and it's useful for a very specific thing in one of our applications it's usually
+# better to write the code yourself, because it means having fewer dependencies
+# - Web related stuff in Python should be done using a web-framework. Flask will probably do for out things. It's light-
+# weight, intuitive, properly maintained and there are a lot of open source extensions available for security things,
+# database transactions and login among others.
+
+# Notes for other projects/programming languages:
+- If we have tools that generate a lot of data, especially a lot of temporary data, we should make a cronjob that runs
+  like every weekend, to remove these temporary files. Result files of tools can be linked to specific users in a later
+  stage. If we have limited server resources, we could give priority to senior researchers/research partners, and remove
+  the result files from "random people" after a week or so, to free up space, depending on the free resources and size
+  of the result files
+- Try to incorporate code quality checks, and link them to pre-commit hooks for other programming languages. Java has Jenkins
+  and probably some other things for code quality, and for example JUnit for unit-testing. Javascript code has JSLint if I recall
+  correctly for style/quality check
+- If we force unit testing before allowing commits, we could set a minimum coverage percentage, probably even for each specific
+  thing. For example, percentage of lines says less about proper testing, than testing all the conditional statements, return
+  statements and other logic. We could increase this percentage later on
+- For existing projects, we could start with a code style/quality score of 7/10 for Python projects, maybe even 8/10, and then
+  proceed to increase that to 9/10 or 9.5/10 if everything is up and running, so the code is maintained really well from that point
+  at least as far as style/quality rules go
+- Pep8 rules for Python can be customized depending on needs. For example, the maximum line length from PEP8 is usually 80, but
+  a line length of 100 characters, including preceding tabs, seems good. This ensures readability, but also gives enough room
+  for decent length names for variables. Same thing goes for other languages, it's not written in stone, just proper guidelines
+  created by the community for that programming language
+- Google also has a lot of styleguides for a bunch of programming languages, along with do and don't examples, to demonstrate the
+  difference in readability
+
